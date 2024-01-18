@@ -6,10 +6,6 @@
     <title>User Profile with GraphQL</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/style.css">
-
-  
-
-
 </head>
 <body>
     <header class="text-center p-4 flex justify-between items-center">
@@ -20,12 +16,13 @@
     </header>
 
     <main class="flex justify-center items-center h-screen bg-gray-100">
-  
-     
-        <div id="username"></div>
-        <div id="firstName"></div>
-        <div id="lastName"></div>  
-          
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+            <p class="text-lg font-semibold">ID: <span id="id" class="font-normal"></span></p>
+            <p class="text-lg font-semibold">Login: <span id="login" class="font-normal"></span></p>  
+            <p class="text-lg font-semibold">First Name: <span id="firstName" class="font-normal"></span></p>
+            <p class="text-lg font-semibold">Last Name: <span id="lastName" class="font-normal"></span></p>
+            <p class="text-lg font-semibold">Email: <span id="email" class="font-normal"></span></p>
+        </div>
     </main>
 
     <footer class="text-center p-4">
