@@ -1,23 +1,25 @@
+
 const loadProfile = async () => { 
-    const jwtToken = sessionStorage.getItem('currentSession'); // Retrieving the token
+    const jwtToken = sessionStorage.getItem("currentSession"); // Retrieving the token
     if (jwtToken) {
+          
         document.getElementById("logoutButton").addEventListener("click", () => {
             sessionStorage.removeItem("currentSession")
             window.location.href = "/index"
         })
-
-        const usefInfo = await getUserData(jwtToken);
-
-        createUserProfile(usefInfo);
-
     
+        const userData = await getUserData(jwtToken);
+   
+        // console.log("read this", getUserData(jwtToken))
+        createUserProfile(userData);
     } else {
+
         window.location.href = "/index" 
     }
 }
 
 const getUserData = async (jwtToken) => {   
-
+   
     const queryObject = {
         query: `
             query {
@@ -27,23 +29,30 @@ const getUserData = async (jwtToken) => {
                       login
                         firstName
                         lastName
+                        email
                     }
                   
             }
         `
     }
-
     const result = await getResults(queryObject, jwtToken)
 
+    
     console.log("Response from getResults:", result);
 
-
+  
     const userData = {
-        login: result.data.user.login,
-        firstName: result.data.user.firstName,
-        lastName: result.data.user.lastName
+        id: result.data.user[0].id,
+        login: result.data.user[0].login,
+        firstName: result.data.user[0].firstName,
+        lastName: result.data.user[0].lastName,
+        email: result.data.user[0].email
     }
-    return userData
+
+    return   userData
+
+    
+
 
 
 }
@@ -56,7 +65,7 @@ const getResults = async (queryObject, jwtToken) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer"  + jwtToken 
+            "Authorization": "Bearer "  + jwtToken 
         },
         body: JSON.stringify(queryObject)
     }
@@ -64,8 +73,10 @@ const getResults = async (queryObject, jwtToken) => {
         const response = await fetch(url, options)
         if(response.ok) {
             const result = await response.json()
-            console.log(result[0])
+            
+            console.log("returning2", result)
             return result
+     
         } else {
             console.log("ERRORORORORORO")
         }
@@ -78,7 +89,11 @@ const createUserProfile = (userData) => {
     
         document.getElementById("firstName").textContent = userData.firstName;
         document.getElementById("lastName").textContent = userData.lastName;
-        document.getElementById("username").textContent = userData.login;
+        document.getElementById("id").textContent = userData.id;
+        document.getElementById("login").textContent = userData.login;
+        document.getElementById("email").textContent = userData.email;
+    
+
     }
 
 
