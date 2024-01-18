@@ -31,7 +31,7 @@ async function login(username, password, errorElement) {
 
         if (response.ok) {
             const data = await response.json();
-            sessionStorage.setItem('currentSession', data.token);
+            sessionStorage.setItem('currentSession', data);
             window.location.href = '/graphql'; // redirect to graphql page
         } else {
             errorElement.textContent = 'Invalid login credentials';
