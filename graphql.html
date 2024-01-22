@@ -7,25 +7,50 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/style.css">
 </head>
-<body>
-    <header class="text-center p-4 flex justify-between items-center">
+<body class="flex flex-col h-screen">
+    <header class="text-center p-4 flex justify-between items-center shadow-md">
         <h1>User Profile</h1>
         <button id="logoutButton" class="bg-gray-200 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">
             Logout
         </button>
     </header>
 
-    <main class="flex justify-center items-center h-screen bg-gray-100">
-        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-            <p class="text-lg font-semibold">ID: <span id="id" class="font-normal"></span></p>
-            <p class="text-lg font-semibold">Login: <span id="login" class="font-normal"></span></p>  
-            <p class="text-lg font-semibold">First Name: <span id="firstName" class="font-normal"></span></p>
-            <p class="text-lg font-semibold">Last Name: <span id="lastName" class="font-normal"></span></p>
-            <p class="text-lg font-semibold">Email: <span id="email" class="font-normal"></span></p>
+   
+        <div class="container mx-auto p-4">
+            <!-- User Profile -->
+            <div class="bg-white shadow-md rounded p-4 mb-4">
+                <h2 class="text-xl font-bold mb-2">User Profile</h2>
+                <p><strong>First Name:</strong> <span id="firstName"></span></p>
+                <p><strong>Last Name:</strong> <span id="lastName"></span></p>
+                <p><strong>Login:</strong> <span id="login"></span></p>
+                <p><strong>Email:</strong> <span id="email"></span></p>
+                <p><strong>Address:</strong> <span id="attribute"></span></p>
+            </div>
+    
+            <!-- Audit Details -->
+            <div class="bg-white shadow-md rounded p-4 mb-4">
+                <h2 class="text-xl font-bold mb-2">Audit Details</h2>
+                <p><strong>Audit Ratio:</strong> <span id="auditRatio"></span></p>
+                <div class="flex items-center">
+                    <span class="mr-2"><strong>Total Up:</strong> <span id="totalUp"></span></span>
+                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                </div>
+                <div class="flex items-center">
+                    <span class="mr-2"><strong>Total Down:</strong> <span id="totalDown"></span></span>
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+    
+            <!-- SVG Graph -->
+            <div class="bg-white shadow-md rounded p-4">
+                <h2 class="text-xl font-bold mb-2">XP Graph</h2>
+                <svg id="xpGraph" class="w-full h-64"></svg>
+            </div>
         </div>
-    </main>
+    
 
-    <footer class="text-center p-4">
+
+    <footer class="text-center p-4 shadow-md">
         <!-- Footer content -->
     </footer>
 
