@@ -1,3 +1,6 @@
+
+
+
 const loadProfile = async () => { 
     const jwtToken = sessionStorage.getItem("currentSession"); 
     if (jwtToken) {
@@ -9,7 +12,8 @@ const loadProfile = async () => {
     
         const userData = await getUserData(jwtToken);
         const xpData = await xpByProject(jwtToken);
-      
+      // Assuming you've awaited xpByProject somewhere above
+
 
         const xpDataForGraph = xpData.map(item => ({
             amountInKb: item.amount / 1000, 
@@ -22,7 +26,7 @@ const loadProfile = async () => {
 
         const transactionDates = await fetchTransactionDates(jwtToken);
         if (transactionDates && transactionDates.length > 0) {
-            renderProgressGraph(transactionDates);
+            renderProgressGraph(transactionDates, xpData);
         } else {
             console.error("No transaction dates available for rendering the progress graph.");
         }
@@ -218,9 +222,12 @@ const fetchTransactionDates = async (jwtToken) => {
         let accumulatedXp = 0;
         const accumulatedData = sortedTransactions.map(transaction => {
             accumulatedXp += transaction.amount;
+           
             return {
+                amount: transaction.amount,
                 date: new Date(transaction.createdAt), // Ensure it is a Date object
-                accumulatedXp: accumulatedXp/1000 // Convert to kb
+                accumulatedXp: accumulatedXp/1000, // Convert to kb
+                
             };
         });
        
@@ -234,10 +241,10 @@ const fetchTransactionDates = async (jwtToken) => {
 const renderProgressGraph = (transactionData) => {
     console.log("Transaction data:", transactionData);
     
-    const margin = { top: 20, right: 20, bottom: 150, left: 40 };
+    const margin = { top: 20, right: 20, bottom: 150, left: 70 };
 
-    const pointWidthMultiplier = 100; // Increased from 50 to 100
-    const baseWidth = 800; // Increased base width
+    const pointWidthMultiplier = 200; // Increased from 50 to 100
+    const baseWidth = 1000; // Increased base width
     const width = Math.max(baseWidth, transactionData.length * pointWidthMultiplier) - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
@@ -247,13 +254,19 @@ const renderProgressGraph = (transactionData) => {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+
     // Calculate the start date with a month buffer before the earliest date in the data
     const startDate = new Date(d3.min(transactionData, d => d.date));
     startDate.setMonth(startDate.getMonth() - 1);
 
+    const currentDate = new Date();
+
+    // Find the latest date in your data or use the current date if it's later
+    const latestDate = new Date(Math.max(d3.max(transactionData, d => d.date), currentDate));
+
     // Create scales
     const x = d3.scaleTime()
-        .domain([startDate, d3.extent(transactionData, d => d.date)[1]]) // Use the calculated start date
+        .domain([startDate, latestDate]) // Adjusted domain
         .range([0, width]);
 
     const y = d3.scaleLinear()
@@ -282,7 +295,7 @@ const renderProgressGraph = (transactionData) => {
         .append("circle")
         .attr("cx", d => x(d.date))
         .attr("cy", d => y(d.accumulatedXp))
-        .attr("r", 5) // Adjust the radius as needed
+        .attr("r", 3) // Adjust the radius as needed
         .attr("fill", "steelblue"); // Adjust the color as needed
 
     // Add date labels underneath each dot
@@ -292,22 +305,34 @@ const renderProgressGraph = (transactionData) => {
         .append("text")
         .attr("x", d => x(d.date))
         .attr("y", height + margin.bottom / 2)
-        .attr("transform", d => `rotate(-90, ${x(d.date)}, ${height + margin.bottom / 2})`)
+        .attr("transform", d => `rotate(-60, ${x(d.date)}, ${height + margin.bottom / 2})`)
         .text(d => formatDate(d.date)) 
-        
         .attr("text-anchor", "end")
         .style("font-size", "10px")
         .attr("dx", "-.8em")
         .attr("dy", ".15em");
 
-    // Modify the X-axis
-    svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%m/%Y")));
 
     // Create Y-axis
     svg.append("g")
         .call(d3.axisLeft(y));
+
+    // Add Y grid lines
+    svg.append("g")     
+        .attr("class", "grid")
+        .call(d3.axisLeft(y)
+            .tickSize(-width) // Extend the lines across the full width of the chart
+            .tickFormat("")   // Remove the text labels from the grid lines
+        )
+        .style("color", "#e5e5e5") // The color of the grid lines, set as needed
+        .style("stroke-dasharray", "3,3") // Optional: this styles the lines as dashed
+        .lower(); 
+
+    svg.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%m/%Y')));
+
+
 
     // Add X-axis label
     // svg.append("text")
@@ -320,9 +345,24 @@ const renderProgressGraph = (transactionData) => {
     svg.append("text")
         .attr("transform", "rotate(-90)")
         .attr("x", -height / 2)
-        .attr("y", -margin.left - 20)
+        .attr("y", -margin.left + 30)
         .style("text-anchor", "middle")
         .text("Accumulated XP in kB");
+
+    svg.selectAll("xpLabel")
+        .data(transactionData)
+        .enter()
+        .append("text")
+        .attr("x", d => x(d.date))
+        // Increase the offset if needed to move the label further up
+        .attr("y", d => y(d.accumulatedXp) - 10)
+        .text(d => `+${(d.amount / 1000).toFixed(1)} kB`)
+        .attr("text-anchor", "start")
+        .style("font-size", "10px")
+        .attr("transform", d => `rotate(-90, ${x(d.date)}, ${y(d.accumulatedXp) - 10})`)
+        .attr("fill", "black");
+
+  
 }
 
 const formatDate = (date) => {
@@ -333,6 +373,5 @@ const formatDate = (date) => {
 }
 
 window.onload = loadProfile;
-
 
 
