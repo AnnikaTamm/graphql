@@ -50,35 +50,66 @@ const renderXpGraph = (xpDataForGraph) => {
         return;
     }
 
-    const totalXP = xpDataForGraph.reduce((acc, data) => acc + data.amountInKb, 0);
-
     const maxXP = Math.max(...xpDataForGraph.map(data => data.amountInKb));
 
-    const svg = document.getElementById('xpGraph');
-    const svgWidth = svg.clientWidth;
-    const svgHeight = svg.clientHeight;
-    const barHeight = svgHeight / xpDataForGraph.length;
-    const nameColumnWidth = 100; 
+    const margin = { left: 150, right: 10 }; // Margin on the right for the amounts
+    const barPadding = 10;
+    const barHeight = 20;
+    const requiredHeight = xpDataForGraph.length * (barHeight + barPadding);
 
-    let svgContent = `<text x="50%" y="20" font-size="14" text-anchor="middle" fill="black">Total XP: ${totalXP.toFixed(0)} kb</text>`; // Total XP text at the top
+    const svgContainer = d3.select('#xpGraph');
+    const svgWidth = svgContainer.node().getBoundingClientRect().width;
+    const svg = svgContainer.html('').attr('width', svgWidth).attr('height', requiredHeight);
 
-    svgContent += xpDataForGraph.map((data, index) => {
-        const barWidth = ((data.amountInKb / maxXP) * (svgWidth - nameColumnWidth));
-        const y = barHeight * index + 30; 
-        const rect = `<rect width="${barWidth}" height="${barHeight - 10}" y="${y}" x="${nameColumnWidth}" fill="grey"></rect>`;
+    // Define the scale for the width of the bars
+    const xScale = d3.scaleLinear()
+        .domain([0, maxXP])
+        .range([0, svgWidth - margin.left - margin.right]);
 
-        const textY = y + (barHeight / 2);
 
-        const text = `<text x="5" y="${textY}" font-size="12" alignment-baseline="middle">${data.projectName}</text>`;
 
-        const kbTextX = nameColumnWidth + barWidth + 5;
-        const kbText = `<text x="${kbTextX}" y="${textY}" font-size="12" fill="black" alignment-baseline="middle">${data.amountInKb.toFixed(1)} kb</text>`;
+    // Add a group element to offset the chart for padding within the SVG
+    const chartGroup = svg.append('g').attr('transform', `translate(${margin.left}, 0)`);
 
-        return rect + text + kbText;
-    }).join('');
+    // Add bars to the chart
+    const bars = chartGroup.selectAll('.bar')
+        .data(xpDataForGraph)
+        .enter()
+        .append('g')
+        .attr('class', 'bar-group');
 
-    svg.innerHTML = svgContent;
+    bars.append('rect')
+        .attr('class', 'bar')
+        .attr('x', 0)
+        .attr('y', (d, i) => i * (barHeight + barPadding))
+        .attr('width', d => xScale(d.amountInKb))
+        .attr('height', barHeight)
+        .attr('fill', 'rgba(70, 130, 180, 0.6)');
+
+    // Add text labels for each bar for the task names
+    bars.append('text')
+        .attr('class', 'label')
+        .attr('x', -10) // Shift labels to the left of the bars
+        .attr('y', (d, i) => i * (barHeight + barPadding) + barHeight / 2)
+        .attr('dy', '.35em') // vertical-align: middle
+        .attr('text-anchor', 'end') // right-align text
+        .text(d => d.projectName);
+
+    // Add text at the exact end of the bar, flush with the end, and right-aligned
+    bars.append('text')
+        .attr('class', 'amount-kb')
+        .attr('x', d => xScale(d.amountInKb) - 2) // Position at the exact end of the bar
+        .attr('y', (d, i) => i * (barHeight + barPadding) + barHeight / 2)
+        .attr('dy', '.35em') // vertical-align: middle
+        .style('text-anchor', 'end') // right-align text
+        .text(d => `${d.amountInKb.toFixed(1)} kB`);
+
+
+
 }
+
+
+
 
 const getUserData = async (jwtToken) => {   
     const queryObject = {
@@ -241,7 +272,7 @@ const fetchTransactionDates = async (jwtToken) => {
 const renderProgressGraph = (transactionData) => {
     console.log("Transaction data:", transactionData);
     
-    const margin = { top: 20, right: 20, bottom: 150, left: 70 };
+    const margin = { top: 30, right: 20, bottom: 60, left: 70 };
 
     const pointWidthMultiplier = 200; // Increased from 50 to 100
     const baseWidth = 1000; // Increased base width
@@ -288,6 +319,20 @@ const renderProgressGraph = (transactionData) => {
         .attr("stroke", "steelblue") // Set the stroke color
         .attr("stroke-width", 2); // Set the stroke width
 
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("text-align", "center")
+        .style("width", "140px") // Increased from 120px
+        .style("height", "40px") // Increased from 28px
+        .style("padding", "6px") // Increased from 4px
+        .style("font", "bold 14px sans-serif") // Made font bolder and slightly larger
+        .style("background", "lightsteelblue")
+        .style("border", "0px")
+        .style("border-radius", "8px")
+        .style("pointer-events", "none")
+        .style("opacity", 0);
+
     // Create and append the dots
     svg.selectAll("dot")
         .data(transactionData)
@@ -295,22 +340,25 @@ const renderProgressGraph = (transactionData) => {
         .append("circle")
         .attr("cx", d => x(d.date))
         .attr("cy", d => y(d.accumulatedXp))
-        .attr("r", 3) // Adjust the radius as needed
-        .attr("fill", "steelblue"); // Adjust the color as needed
+        .attr("r", 5)
+        .attr("fill", "steelblue")
+        .on("mouseover", function(event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(formatTooltip(d))
+                .style("left", (event.pageX) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
 
-    // Add date labels underneath each dot
-    svg.selectAll("dateLabel")
-        .data(transactionData)
-        .enter()
-        .append("text")
-        .attr("x", d => x(d.date))
-        .attr("y", height + margin.bottom / 2)
-        .attr("transform", d => `rotate(-60, ${x(d.date)}, ${height + margin.bottom / 2})`)
-        .text(d => formatDate(d.date)) 
-        .attr("text-anchor", "end")
-        .style("font-size", "10px")
-        .attr("dx", "-.8em")
-        .attr("dy", ".15em");
+    const formatTooltip = (d) => {
+            return 'Date: ' + formatDate(d.date) + '<br/>' + '+ ' + (d.amount / 1000).toFixed(1) + ' kB';
+        }
 
 
     // Create Y-axis
@@ -332,14 +380,13 @@ const renderProgressGraph = (transactionData) => {
         .attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%m/%Y')));
 
-
-
     // Add X-axis label
-    // svg.append("text")
-    //     .attr("x", width / 2)
-    //     .attr("y", height + margin.bottom - 10)
-    //     .style("text-anchor", "middle")
-    //     .text("Date");
+    svg.append("text")
+        .attr("x", 0) // x-coordinate at the origin (left side)
+        .attr("y", height) // y-coordinate just below the x-axis
+        .attr("dy", "2em") // slight offset downwards to avoid overlap with the axis
+        .style("text-anchor", "start")
+        .text("Date");
 
     // Add Y-axis label
     svg.append("text")
@@ -348,21 +395,6 @@ const renderProgressGraph = (transactionData) => {
         .attr("y", -margin.left + 30)
         .style("text-anchor", "middle")
         .text("Accumulated XP in kB");
-
-    svg.selectAll("xpLabel")
-        .data(transactionData)
-        .enter()
-        .append("text")
-        .attr("x", d => x(d.date))
-        // Increase the offset if needed to move the label further up
-        .attr("y", d => y(d.accumulatedXp) - 10)
-        .text(d => `+${(d.amount / 1000).toFixed(1)} kB`)
-        .attr("text-anchor", "start")
-        .style("font-size", "10px")
-        .attr("transform", d => `rotate(-90, ${x(d.date)}, ${y(d.accumulatedXp) - 10})`)
-        .attr("fill", "black");
-
-  
 }
 
 const formatDate = (date) => {
