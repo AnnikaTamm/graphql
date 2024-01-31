@@ -224,7 +224,6 @@ const createUserProfile = (userData) => {
 
 const fetchTransactionDates = async (jwtToken) => {
     const queryObject = {
-      
         query: `
         {
             transaction(
@@ -234,9 +233,9 @@ const fetchTransactionDates = async (jwtToken) => {
                 },
                 order_by: { createdAt: asc }
             ) {
-
                 amount
                 createdAt
+                path
             }
         }
         `
@@ -249,25 +248,26 @@ const fetchTransactionDates = async (jwtToken) => {
             new Date(a.createdAt) - new Date(b.createdAt)
         );
 
-        // Accumulate XP values
+        // Accumulate XP values and include project name
         let accumulatedXp = 0;
         const accumulatedData = sortedTransactions.map(transaction => {
             accumulatedXp += transaction.amount;
-           
+            const updatedPath = transaction.path.replace("/johvi/div-01/", ""); // Extract project name
             return {
                 amount: transaction.amount,
-                date: new Date(transaction.createdAt), // Ensure it is a Date object
-                accumulatedXp: accumulatedXp/1000, // Convert to kb
-                
+                date: new Date(transaction.createdAt),
+                accumulatedXp: accumulatedXp/1000,
+                projectName: updatedPath, // Include project name
             };
         });
-       
+
         return accumulatedData;
     } else {
         console.error("No transaction dates found in the response");
         return [];
     }
 }
+
 
 const renderProgressGraph = (transactionData) => {
     console.log("Transaction data:", transactionData);
@@ -319,21 +319,40 @@ const renderProgressGraph = (transactionData) => {
         .attr("stroke", "steelblue") // Set the stroke color
         .attr("stroke-width", 2); // Set the stroke width
 
-    const tooltip = d3.select("body").append("div")
-        .attr("class", "tooltip")
+    
+    
+        const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip tooltip-box")
         .style("position", "absolute")
         .style("text-align", "center")
-        .style("width", "140px") // Increased from 120px
-        .style("height", "40px") // Increased from 28px
-        .style("padding", "6px") // Increased from 4px
-        .style("font", "bold 14px sans-serif") // Made font bolder and slightly larger
+        .style("padding", "6px") // Adjust padding as needed
+        .style("font", "bold 14px sans-serif") // Adjust font styles as needed
         .style("background", "lightsteelblue")
         .style("border", "0px")
         .style("border-radius", "8px")
         .style("pointer-events", "none")
         .style("opacity", 0);
+    
+    // Calculate the width and height based on the content
+    const tooltipWidth = tooltip.node().offsetWidth;
+    const tooltipHeight = tooltip.node().offsetHeight;
+    
+    // Update the Tailwind classes
+    tooltip.classed("w-auto", true); // Set width to auto
+    tooltip.classed("h-auto", true); // Set height to auto
+    
+    // Adjust the tooltip position based on its dimensions (if needed)
+    // You can calculate the position based on the width and height
+    
+    // Example: Move the tooltip left by half of its width
+    const leftOffset = -tooltipWidth / 2;
+    tooltip.style("left", `calc(50% + ${leftOffset}px)`);
+    
+    // Function to format tooltip content
+    const formatTooltip = (d) => {
+        return `Date: ${formatDate(d.date)}<br/>+ ${(d.amount / 1000).toFixed(1)} kB<br/>Project: ${d.projectName}`;
+    }
 
-    // Create and append the dots
     svg.selectAll("dot")
         .data(transactionData)
         .enter()
@@ -348,7 +367,7 @@ const renderProgressGraph = (transactionData) => {
                 .style("opacity", .9);
             tooltip.html(formatTooltip(d))
                 .style("left", (event.pageX) + "px")
-                .style("top", (event.pageY - 28) + "px");
+                .style("top", (event.pageY - tooltipHeight - 10) + "px"); // Adjust top position
         })
         .on("mouseout", function(d) {
             tooltip.transition()
@@ -356,11 +375,7 @@ const renderProgressGraph = (transactionData) => {
                 .style("opacity", 0);
         });
 
-    const formatTooltip = (d) => {
-            return 'Date: ' + formatDate(d.date) + '<br/>' + '+ ' + (d.amount / 1000).toFixed(1) + ' kB';
-        }
-
-
+       
     // Create Y-axis
     svg.append("g")
         .call(d3.axisLeft(y));
