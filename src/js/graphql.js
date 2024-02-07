@@ -19,7 +19,7 @@ const loadProfile = async () => {
         }));
         const totalXPElement = document.getElementById("totalXP");
         if (totalXPElement) {
-            totalXPElement.textContent = `${(totalXP / 1000).toFixed(2)} kB`; // Convert to kilobytes and format
+            totalXPElement.textContent = `${(totalXP / 1000).toFixed(0)} kB`; // Convert to kilobytes and format
         } else {
             console.error("Element with ID 'totalXP' not found.");
         }
