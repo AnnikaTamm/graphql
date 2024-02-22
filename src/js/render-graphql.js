@@ -78,9 +78,18 @@ const renderXpGraph = (xpDataForGraph) => {
 const renderProgressGraph = (transactionData) => {
 
     const margin = { top: 30, right: 20, bottom: 60, left: 70 };
-    const pointWidthMultiplier = 200; // Increased from 50 to 100
-    const baseWidth = 1000; // Increased base width
-    const width = Math.max(baseWidth, transactionData.length * pointWidthMultiplier) - margin.left - margin.right;
+    const maxWidth = 960; // Maximum width that the graph can expand to
+
+    // Adjust the pointWidthMultiplier based on the number of transactions to manage spacing
+    let pointWidthMultiplier = 200; // Base value for spacing between points
+    const dynamicWidth = transactionData.length * pointWidthMultiplier;
+
+    if (dynamicWidth > maxWidth) {
+        // If the calculated width exceeds maxWidth, adjust the multiplier to fit within maxWidth
+        pointWidthMultiplier = maxWidth / transactionData.length;
+    }
+
+    const width = Math.max(Math.min(dynamicWidth, maxWidth) - margin.left - margin.right, 0); 
     const height = 400 - margin.top - margin.bottom;
 
     // Create the SVG element
